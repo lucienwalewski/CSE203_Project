@@ -9,6 +9,7 @@ Set Implicit Arguments.
 Axiom todo : forall {A}, A.
 Ltac todo := by apply: todo.
 
+
 (* ==================================================================== *)
 (* This template contains incomplete definitions that you have to       *)
 (* fill. We always used the keyword `Definition` for all of them but    *)
@@ -103,6 +104,8 @@ Notation language := (word -> Prop).
 
 Implicit Types (L G H : language) (x y : A) (w : word).
 
+
+Axiom head_l : forall x w y m, x::w = y::m -> x = y /\ w = m.
 (* -------------------------------------------------------------------- *)
 (* From there, we can define the following languages                    *)
 
@@ -649,12 +652,7 @@ induction reg.
   - apply revnil.
 + apply REq with (fun w => langA x w).
   - apply ROne.
-  - split; move => L1.
-    induction w.
-    discriminate.
-    simpl.
-    unfold langA in IHw. unfold langA in L1. unfold langA.
-    
+  - admit.
 + apply RUnion;try apply IHreg1;try apply IHreg2.
 
 + apply REq with (fun w => langS (langM G) (langM L) w).
@@ -664,8 +662,7 @@ induction reg.
 + apply REq with (langK (langM L)). 
   - apply RKleene;done. 
   - apply revK.
-Qed.
-
+Admitted.
 
 
 
@@ -804,17 +801,8 @@ induction reg.
   - apply H. apply H1. done.
 + exists RE_Empty. simpl. done.
 + exists RE_Void. simpl. done.
-+ induction w0.
-  - exists RE_Void. done.
-  - move: IHw0 => [r IH]. exists (RE_Concat (RE_Atom a) r).
-    simpl. apply eqL_R in IH.
-    split; move => L1.
-      * exists (a::nil). exists w0. split;try split;try done.
-        apply IH. done.
-      * move: L1 => [w1 [w2 [eq [lw int]]]]. 
-        unfold langW in lw. apply IH in int. unfold langW in int.
-        rewrite int in eq. rewrite lw in eq. simpl in eq. 
-        rewrite eq. done.
++ exists (RE_Atom x). 
+simpl. done.
 + move: IHreg1 => [r1 Lr]. move: IHreg2 => [r2 Gr].
   exists (RE_Disjunct r1 r2). simpl. unfold langU.  
   split; rewrite Lr; rewrite Gr; done.
@@ -1074,7 +1062,7 @@ Qed.
 
 (* Q18. (HARD - OPTIONAL) show that `rmatch` is complete.               *)
 
-Axiom head_l : forall x w y m, x::w = y::m -> x = y /\ w = m.
+
 Axiom not_nil : forall x w, nil = x::w -> false.
 
 Axiom contfalse w: forall r, contains0 r = false ->  interp r nil = false. 
