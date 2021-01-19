@@ -514,7 +514,7 @@ Inductive regular : language -> Prop :=
   (* The empty language is regular *)
 | REmpty : regular lang0
 | REword : regular lang1
-| ROne  : forall x, regular (langA x)
+| ROne  x: regular (langA x)
 | RUnion L G of regular L & regular G : regular (langU L G)
 | RConc L G of regular L & regular G : regular (langS L G)
 | RKleene L of regular L : regular (langK L)
