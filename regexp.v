@@ -110,12 +110,6 @@ inversion e.
 done.
 Qed.
 
-(* Some additional Lemmas *)
-
-Lemma p_0 n: n + 0 = n.
-Proof.
-done.
-Qed.
 
 Lemma add_eq_0: forall n1 n2,0 = n1 + n2 -> n1 = 0 /\ n2 = 0.
 Proof.
@@ -297,149 +291,7 @@ Proof.
 split; move => [lw lg]; done.
 Qed.
 
-(* Lemmas used for initial Kleene closure definition *)
 
-(* Useful Lemmas regarding Ln: (we write langS L1 L) as L1 ++ L2)
-
-Ln_plus1l gives us L ++ L^n =L L^(n+1) =L L^n ++ L
-
-Ln_plus gives us L^n1 ++ L^n2 =L L^(n1 + n2)
-*)
-
-Lemma Ln_plus1l L n: (langS (Ln L n) L) =L Ln L (S n).
-Proof.
-induction n.
-+ simpl. split;rewrite concatL1; apply concat1L.
-
-+ simpl. split.
-  - move => [w1 [w2 [eq [ln l]]]].
-    move: ln => [w3 [w4 [eq2 [ln1 l1]]]].
-    exists w3. exists (w4 ++ w2).
-    split; try split;try done.
-    rewrite eq. rewrite eq2. intuition.
-    apply IHn. simpl.
-    exists w4. exists w2.
-    split; try split;try done.
-  - move => [w1 [w2 [eq [l1 [w3 [w4 [eq2 [l2 ln2]]]]]]]].
-    apply concatA.
-    exists w1. exists(w3 ++ w4).
-    split; try split;try done.
-    rewrite eq. rewrite eq2. intuition.
-    apply IHn.
-    exists w3. exists w4.
-    split; try split;try done.
-Qed.
-
-
-Lemma Ln_plus L: forall n1 n2, langS (Ln L n1) (Ln L n2) =L Ln L (n1 + n2).
-Proof.
-elim => [|n1 h1] n2//=.
-+ apply concat1L.
-+ split; move => L1.
-  move: L1 => [w1 [w2 [eq [ls ln1]]]].
-  move: ls => [w3 [w4 [eq2 [l1 ln2]]]].
-  exists w3. exists (w4 ++ w2). split;try split; try done.
-  rewrite eq. rewrite eq2. intuition.
-  apply h1. exists w4. exists w2. split;try split;try done.
-  
-  move: L1 => [w1 [w2 [eq [ls ln2]]]].
-  apply h1 in ln2.
-  move: ln2 => [w3 [w4 [eq2 [ls2 ln3]]]].
-  exists (w1++w3). exists (w4).
-  split; try split; try done.
-  rewrite eq. rewrite eq2. intuition.
-  exists w1. exists w3. split;try split;done.
-Qed.
-
-(* 
-  Next we have side Lemmas about langK
-        (we write langK L as L^K)
-
-  langKA gives L^K ++ L^K =L L^K
-
-  and concat_langK gives L^K ++ (L^K)^n = L^K
-*)
-
-(*
-Lemma langKA L : langS (langK L) (langK L) =L langK L.
-Proof.
-split; unfold langS. unfold langK. 
-+ move => L1.
-  move: L1 => [w1 [w2 [eq [[k1 ln1] [k2 ln2]]]]].
-  exists (k1 + k2).
-  induction k1;simpl;simpl in ln1. 
-  - unfold lang1 in ln1. rewrite ln1 in eq.
-    rewrite app_nil_l in eq. rewrite eq. done.
-  - unfold langS. unfold langS in ln1. move: ln1 => [w3 [w4 [eq2 [l1 l2]]]].
-    exists w3. exists (w4 ++ w2).
-    split; try split; try done.
-      * rewrite eq. rewrite eq2. intuition.
-      * apply Ln_plus. unfold langS. exists w4. exists w2. 
-        split;try split;try done.
-+ move => [n ln].
-  exists nil. exists w.
-  split;try split;try done.
-  - exists 0. done.
-  - exists n. done.
-Qed.
-*)
-
-(* To prove Lang_KK2 *)
- 
-Lemma concat_langK L : forall k w, langS (langK_2 L) (Ln (langK_2 L) k) w -> (langK_2 L) w .
-Proof.
-elim => [|k hk] w.
-+ simpl. apply concatL1.
-+ simpl. move => L1.
-  move: L1 => [w1 [w2 [eq [[k2 lk2] ls]]]].
-  move: ls => [w3 [w4 [eq2 [[k3 lk3] lnK2]]]].
-  apply hk.
-  exists (w1 ++ w3). exists w4.
-  split;try split;try done. 
-  rewrite eq. rewrite eq2. intuition.
-  exists (k2 + k3).
-  apply Ln_plus.
-  exists w1. exists w3.
-  split;try split; try done.
-Qed.
-
-Lemma eqK L: langK_2 L =L langK L.
-Proof.
-move => w.
-split.
-+ move => [n ln].
-move: w ln.
-induction n; intros.
-simpl in ln. rewrite ln. apply Knil.
-simpl in ln. move: ln => [w1 [w2 [eq [wnil lw2]]]].
-apply IHn in lw2.
-rewrite eq.
-apply Kconcat. apply Kself. done. done.
-
-+ elim.
-exists 0. done.
-exists 1. simpl. apply concatL1. done.
-move => w1 w2 lw1 lk22 lk2.
-move: lk22 => [n ln2].
-move => [n' ln'].
-exists (n + n'). 
-apply Ln_plus. 
-exists w1,w2. split;try split; try done.
-Qed.
-
-Lemma langKK_2 L : langK_2 (langK_2 L) =L langK_2 L.
-Proof.
-split; move => L1.
-+ move: L1 => [k ln1].
-  induction k.
-  - exists 0. simpl. done.
-  - move: ln1 => [w1 [w2 [eq [lgk ln]]]].
-    apply concat_langK with k.
-    exists w1. exists w2.
-    split; try split; try done.
-+ move: L1 => [n ln].
-  exists 1. simpl. apply concatL1. exists n. done.
-Qed.
 
 Lemma langKK L : langK (langK L) =L langK L.
 Proof. 
@@ -591,30 +443,6 @@ split; move => L1.
     apply Kconcat. apply IHL1_2. rewrite rev_involutive. done.
                     apply IHL1_1. rewrite rev_involutive. done.
 Qed.
-Lemma revK_2 L: langK_2 (langM L) =L (fun w => langK_2 L (rev w)).
-Proof.
-
-split; move => [n ln]; exists n.
-+ move: w ln. 
-  induction n; move => w ln. 
-  - simpl in ln. simpl. apply revnil. rewrite rev_involutive. done.
-  - apply Ln_plus1l in ln. 
-    simpl. move: ln => [w1 [w2 [eq [lm ln1]]]].
-    exists (rev w2), (rev w1). 
-    split; try split; try done.
-    * rewrite eq. apply rev_app_distr.
-    * apply IHn. done.
-+ move: w ln.
-  induction n; move => w ln. 
-  - simpl in ln. simpl. apply revnil. done.
-  - apply Ln_plus1l in ln. 
-    simpl. move: ln => [w1 [w2 [eq [lm ln1]]]].
-    exists (rev w2), (rev w1). 
-    split; try split; try done.
-    * apply rev_eq_app. done.
-    * unfold langM. rewrite rev_involutive. done.
-    * apply IHn. rewrite rev_involutive. done.
-Qed.
 
 (* -------------------------------------------------------------------- *)
 (* Q5. prove that `langM L` is regular, given that L is regular.        *)
@@ -697,11 +525,10 @@ Qed.
 Inductive regexp : Type :=
 | RE_Empty : regexp 
 | RE_Void  : regexp 
-| RE_Atom  : A -> regexp
+| RE_Atom : A -> regexp
 | RE_Disjunct : regexp -> regexp -> regexp
 | RE_Concat : regexp -> regexp -> regexp
 | RE_Kleene : regexp -> regexp
-
 .
 
 Implicit Types (r : regexp).
@@ -739,36 +566,16 @@ induction r;simpl;try done.
 apply REmpty.
 apply REword.
 apply ROne.
-apply RUnion;done.
+apply RUnion; done.
 apply RConc;done.
 apply RKleene;done.
-
 Qed.
 
 (* Q9. show that any regular language can be interpreted as a           *)
 (*     regular expression:                                              *)
 
 
-Lemma Lneq1 L G n: (L =L G) -> (langS L (Ln L n)) =L (langS G (Ln L n)).
-Proof.
-intro.
-split; move => [w1 [w2 [eq [l ln]]]];
-exists w1; exists w2; split;try split; try done. 
-apply H. done.
-apply H. done.
-Qed.
-Lemma Lneq L G n: (L =L G) -> (Ln L n) =L (Ln G n).
-Proof.
-intro.
-induction n; try done.
-split; simpl; move => [w1 [w2 [eq [l ln]]]]. fold Ln in ln.
-  + exists w1. exists w2. split; try split; try done. 
-      * apply H. done.
-      * apply IHn. done.
-  + exists w1. exists w2. split; try split; try done. 
-      * apply H. done.
-      * apply IHn. done.
-Qed. 
+
 
 Lemma regexp_regular L : regular L -> exists r, L =L interp r.
 Proof. 
@@ -781,10 +588,9 @@ induction reg.
   - apply H. apply H1. done.
 + exists RE_Empty. simpl. done.
 + exists RE_Void. simpl. done.
-+ exists (RE_Atom x). 
-simpl. done.
++ exists (RE_Atom x). simpl. done.
 + move: IHreg1 => [r1 Lr]. move: IHreg2 => [r2 Gr].
-  exists (RE_Disjunct r1 r2). simpl. unfold langU.  
+  exists (RE_Disjunct r1 r2). simpl. unfold langU.
   split; rewrite Lr; rewrite Gr; done.
 + move: IHreg1 => [r1 Lr]. move: IHreg2 => [r2 Gr].
   exists (RE_Concat r1 r2). simpl. 
@@ -938,16 +744,18 @@ Parameter Aeq : A -> A -> bool.
 (* Here, `Aeq x y` has to be read as `Aeq x y = true`                   *)
 Axiom Aeq_dec : forall (x y : A), Aeq x y <-> x = y.
 Axiom Aeq_dec2 : forall (x y : A), Aeq x y = false <-> x <> y.
+Axiom contfalse : forall r, contains0 r = false ->  interp r nil = False.
+
+
+
+
 
 Fixpoint Brzozowski (x : A) (r : regexp) : regexp := 
             match r with
             |RE_Atom y => if (Aeq x y) then RE_Void else RE_Empty
             |RE_Disjunct r1 r2 => RE_Disjunct (Brzozowski x r1) (Brzozowski x r2)
-            |RE_Concat r1 r2 => if (contains0 r1) 
-  then RE_Disjunct (RE_Concat (Brzozowski x r1) r2) 
-                   (RE_Concat RE_Void (Brzozowski x r2))
-  else RE_Concat (Brzozowski x r1) r2
-
+            |RE_Concat r1 r2 => RE_Disjunct (RE_Concat (Brzozowski x r1) r2) 
+            (if (contains0 r1) then (RE_Concat RE_Void (Brzozowski x r2)) else RE_Empty)
             |RE_Kleene r => RE_Concat (Brzozowski x r) (RE_Kleene r)
             |_ => RE_Empty
 end.
@@ -987,23 +795,23 @@ induction r; simpl; try done; move => x w.
   - left;apply IHr1;apply Br1.
   - right;apply IHr2; apply Br2.
 (*RE_Concat*)
-+ case p1: (contains0 r1);simpl. unfold langU. unfold langS;unfold lang1.
-  - move => [[w1 [w2 [eq12 [br1 lr2]]]]|[w1 [w2 [eq12 [nil1 br2]]]]].
++ unfold langU. unfold langS;unfold lang1. move => [H | H].
+  - move: H => [w1 [w2 [eq12 [br1 lr2]]]].
     * exists (x::w1);exists w2. 
       split; try split; try done.
         rewrite eq12. intuition.
         apply IHr1; done.
-    * rewrite nil1 in eq12. simpl in eq12. 
+  - case p1: (contains0 r1);simpl. unfold langU. unfold langS;unfold lang1.
+    * apply cont in p1. rewrite p1 in H. simpl in H. 
+      move: H => [w1 [w2 [eq12 [br1 lr2]]]].
+      rewrite br1 in eq12. simpl in eq12.
       exists nil; exists (x :: w2).
       split; try split; try done.
-        rewrite eq12. intuition.
-        apply cont in p1. apply contains0_ok. done.
-        apply IHr2. done.
-  - move => [w1 [w2 [eq12 [br1 lr2]]]].
-    * exists (x::w1);exists w2. 
-      split; try split; try done.
-        rewrite eq12. intuition.
-        apply IHr1; done.
+      rewrite eq12. intuition.
+      apply contains0_ok. done.
+      apply IHr2. done.
+    * rewrite p1 in H. contradiction.
+
 (*RE_Kleene*)
 + move => [w1 [w2 [eq [brx lnk]]]]. move: w w1 eq brx.
   induction lnk; intros.
@@ -1046,10 +854,6 @@ Qed.
 
 
 
-Lemma contfalse w r : contains0 r = false ->  interp r nil = false.
-Proof.
-intros.
-Admitted.
 
 
 (*
@@ -1106,26 +910,23 @@ induction r; move => x w int; try done;simpl; simpl in int.
   left. apply IHr1. done.
   right. apply IHr2. done.
 (*Concat*)
-+ case p1: (contains0 r1); simpl; simpl in int.
++ unfold langU. unfold langS.
   - move: int => [w1 [w2 [eq [int1 int2]]]].
-    unfold langU. unfold langS.
     apply backwards in eq. move: eq => [[w' [eq1 eq2]] | [w' [eq1 [eq2 eq3]]]].
     * left. exists w', w2. split; try split; try done. apply IHr1.
     symmetry in eq1. rewrite eq1. done. 
-    * right. exists nil, w'. rewrite eq1. split; try split; try done. apply IHr2.
+    * right. case p1: (contains0 r1). 
+      ++  exists nil, w'. rewrite eq1. split; try split; try done. apply IHr2.
       symmetry in eq3. rewrite eq3. done.
-  - unfold langS. move: int => [w1 [w2 [eq [int1 int2]]]].
-    apply backwards in eq. move: eq => [[w' [eq1 eq2]] | [w' [eq1 [eq2 eq3]]]].
-    * exists w', w2. split; try split; try done. apply IHr1.
-    symmetry in eq1. rewrite eq1. done.
-    * fold langS. apply contfalse with r1 in p1. rewrite eq2 in int1.
-      rewrite p1 in int1. discriminate. 
+      ++ apply contfalse in p1. rewrite eq2 in int1. rewrite p1 in int1. contradiction.
+    
+  
 (*Kleene*)
 + remember (x::w) as W. move: w x HeqW.
 
 induction int; intros.
   - discriminate.
-  - exists w1, nil. split; try split. symmetry. apply app_nil_r.
+  - exists w0, nil. split; try split. symmetry. apply app_nil_r.
     apply IHr. symmetry in HeqW. rewrite HeqW. done. apply Knil.
   - symmetry in HeqW. apply backwards in HeqW. 
     move: HeqW => [[w' [eq1 eq2]] | [w' [eq1 [eq2 eq3]]]].
@@ -1162,4 +963,191 @@ induction w; simpl; move => r rw.
 + apply IHw. apply correct_Brzozowski. done.
 Qed.
 
+(* Lemmas used for initial Kleene closure definition *)
 
+(* Useful Lemmas regarding Ln: (we write langS L1 L) as L1 ++ L2)
+
+Ln_plus1l gives us L ++ L^n =L L^(n+1) =L L^n ++ L
+
+Ln_plus gives us L^n1 ++ L^n2 =L L^(n1 + n2)
+*)
+
+Lemma Ln_plus1l L n: (langS (Ln L n) L) =L Ln L (S n).
+Proof.
+induction n.
++ simpl. split;rewrite concatL1; apply concat1L.
+
++ simpl. split.
+  - move => [w1 [w2 [eq [ln l]]]].
+    move: ln => [w3 [w4 [eq2 [ln1 l1]]]].
+    exists w3. exists (w4 ++ w2).
+    split; try split;try done.
+    rewrite eq. rewrite eq2. intuition.
+    apply IHn. simpl.
+    exists w4. exists w2.
+    split; try split;try done.
+  - move => [w1 [w2 [eq [l1 [w3 [w4 [eq2 [l2 ln2]]]]]]]].
+    apply concatA.
+    exists w1. exists(w3 ++ w4).
+    split; try split;try done.
+    rewrite eq. rewrite eq2. intuition.
+    apply IHn.
+    exists w3. exists w4.
+    split; try split;try done.
+Qed.
+
+
+Lemma Ln_plus L: forall n1 n2, langS (Ln L n1) (Ln L n2) =L Ln L (n1 + n2).
+Proof.
+elim => [|n1 h1] n2//=.
++ apply concat1L.
++ split; move => L1.
+  move: L1 => [w1 [w2 [eq [ls ln1]]]].
+  move: ls => [w3 [w4 [eq2 [l1 ln2]]]].
+  exists w3. exists (w4 ++ w2). split;try split; try done.
+  rewrite eq. rewrite eq2. intuition.
+  apply h1. exists w4. exists w2. split;try split;try done.
+  
+  move: L1 => [w1 [w2 [eq [ls ln2]]]].
+  apply h1 in ln2.
+  move: ln2 => [w3 [w4 [eq2 [ls2 ln3]]]].
+  exists (w1++w3). exists (w4).
+  split; try split; try done.
+  rewrite eq. rewrite eq2. intuition.
+  exists w1. exists w3. split;try split;done.
+Qed.
+
+(* 
+  Next we have side Lemmas about langK
+        (we write langK L as L^K)
+
+  langKA gives L^K ++ L^K =L L^K
+
+  and concat_langK gives L^K ++ (L^K)^n = L^K
+*)
+
+(*
+Lemma langKA L : langS (langK L) (langK L) =L langK L.
+Proof.
+split; unfold langS. unfold langK. 
++ move => L1.
+  move: L1 => [w1 [w2 [eq [[k1 ln1] [k2 ln2]]]]].
+  exists (k1 + k2).
+  induction k1;simpl;simpl in ln1. 
+  - unfold lang1 in ln1. rewrite ln1 in eq.
+    rewrite app_nil_l in eq. rewrite eq. done.
+  - unfold langS. unfold langS in ln1. move: ln1 => [w3 [w4 [eq2 [l1 l2]]]].
+    exists w3. exists (w4 ++ w2).
+    split; try split; try done.
+      * rewrite eq. rewrite eq2. intuition.
+      * apply Ln_plus. unfold langS. exists w4. exists w2. 
+        split;try split;try done.
++ move => [n ln].
+  exists nil. exists w.
+  split;try split;try done.
+  - exists 0. done.
+  - exists n. done.
+Qed.
+*)
+
+(* To prove Lang_KK2 *)
+ 
+Lemma concat_langK L : forall k w, langS (langK_2 L) (Ln (langK_2 L) k) w -> (langK_2 L) w .
+Proof.
+elim => [|k hk] w.
++ simpl. apply concatL1.
++ simpl. move => L1.
+  move: L1 => [w1 [w2 [eq [[k2 lk2] ls]]]].
+  move: ls => [w3 [w4 [eq2 [[k3 lk3] lnK2]]]].
+  apply hk.
+  exists (w1 ++ w3). exists w4.
+  split;try split;try done. 
+  rewrite eq. rewrite eq2. intuition.
+  exists (k2 + k3).
+  apply Ln_plus.
+  exists w1. exists w3.
+  split;try split; try done.
+Qed.
+
+Lemma eqK L: langK_2 L =L langK L.
+Proof.
+move => w.
+split.
++ move => [n ln].
+move: w ln.
+induction n; intros.
+simpl in ln. rewrite ln. apply Knil.
+simpl in ln. move: ln => [w1 [w2 [eq [wnil lw2]]]].
+apply IHn in lw2.
+rewrite eq.
+apply Kconcat. apply Kself. done. done.
+
++ elim.
+exists 0. done.
+exists 1. simpl. apply concatL1. done.
+move => w1 w2 lw1 lk22 lk2.
+move: lk22 => [n ln2].
+move => [n' ln'].
+exists (n + n'). 
+apply Ln_plus. 
+exists w1,w2. split;try split; try done.
+Qed.
+
+Lemma langKK_2 L : langK_2 (langK_2 L) =L langK_2 L.
+Proof.
+split; move => L1.
++ move: L1 => [k ln1].
+  induction k.
+  - exists 0. simpl. done.
+  - move: ln1 => [w1 [w2 [eq [lgk ln]]]].
+    apply concat_langK with k.
+    exists w1. exists w2.
+    split; try split; try done.
++ move: L1 => [n ln].
+  exists 1. simpl. apply concatL1. exists n. done.
+Qed.
+
+Lemma revK_2 L: langK_2 (langM L) =L (fun w => langK_2 L (rev w)).
+Proof.
+
+split; move => [n ln]; exists n.
++ move: w ln. 
+  induction n; move => w ln. 
+  - simpl in ln. simpl. apply revnil. rewrite rev_involutive. done.
+  - apply Ln_plus1l in ln. 
+    simpl. move: ln => [w1 [w2 [eq [lm ln1]]]].
+    exists (rev w2), (rev w1). 
+    split; try split; try done.
+    * rewrite eq. apply rev_app_distr.
+    * apply IHn. done.
++ move: w ln.
+  induction n; move => w ln. 
+  - simpl in ln. simpl. apply revnil. done.
+  - apply Ln_plus1l in ln. 
+    simpl. move: ln => [w1 [w2 [eq [lm ln1]]]].
+    exists (rev w2), (rev w1). 
+    split; try split; try done.
+    * apply rev_eq_app. done.
+    * unfold langM. rewrite rev_involutive. done.
+    * apply IHn. rewrite rev_involutive. done.
+Qed.
+Lemma Lneq1 L G n: (L =L G) -> (langS L (Ln L n)) =L (langS G (Ln L n)).
+Proof.
+intro.
+split; move => [w1 [w2 [eq [l ln]]]];
+exists w1; exists w2; split;try split; try done. 
+apply H. done.
+apply H. done.
+Qed.
+Lemma Lneq L G n: (L =L G) -> (Ln L n) =L (Ln G n).
+Proof.
+intro.
+induction n; try done.
+split; simpl; move => [w1 [w2 [eq [l ln]]]]. fold Ln in ln.
+  + exists w1. exists w2. split; try split; try done. 
+      * apply H. done.
+      * apply IHn. done.
+  + exists w1. exists w2. split; try split; try done. 
+      * apply H. done.
+      * apply IHn. done.
+Qed. 
