@@ -6,8 +6,6 @@ Require Import Coq.Arith.PeanoNat.
 
 Set Implicit Arguments.
 
-Axiom todo : forall {A}, A.
-Ltac todo := by apply: todo.
 
 
 (* ==================================================================== *)
@@ -105,7 +103,13 @@ Notation language := (word -> Prop).
 Implicit Types (L G H : language) (x y : A) (w : word).
 
 
-Axiom head_l : forall x w y m, x::w = y::m -> x = y /\ w = m.
+Definition head_l : forall x w y m, x::w = y::m -> x = y /\ w = m.
+Proof.
+move => x w y m e.
+inversion e.
+done.
+Qed.
+
 (* -------------------------------------------------------------------- *)
 (* From there, we can define the following languages                    *)
 
@@ -212,29 +216,24 @@ Qed.
 
 Lemma concat0L L : langS lang0 L =L lang0.
 Proof.
-split.
-+ move => [w1 [w2 [eq [false l]]]]. 
-  contradiction.
+split. 
++ move => [w1 [w2 [eq [false l]]]]. contradiction.
 + contradiction.
 Qed.
 
 Lemma concatL0 L : langS L lang0 =L lang0.
-Proof.
-unfold langS.
-unfold lang0.
-split.
+Proof. 
+unfold langS;unfold lang0.
+split. 
 + move => [w1 [w2 [eq [l false]]]]. contradiction.
 + contradiction.
 Qed.
 
 Lemma concat1L L : langS lang1 L =L L.
-Proof. 
+Proof.
 split.
 + move => [w1 [w2 [eq [wnil lw2]]]].
-  rewrite wnil in eq. 
-  simpl in eq. 
-  rewrite eq.
-  apply lw2.
+  rewrite wnil in eq. simpl in eq. rewrite eq. apply lw2.
 + exists nil. exists w. done.
 Qed.
 
@@ -248,58 +247,50 @@ Qed.
 
 
 Lemma concatL1 L : langS L lang1 =L L.
-Proof.
-unfold langS; unfold lang1.
+Proof. 
+unfold langS;unfold lang1.
 split.
 + move => [w1 [w2 [eq [lw1 wnil]]]].
-  rewrite wnil in eq.
-  rewrite app_nil_r in eq.
-  rewrite eq. 
-  done.
-+ move => Lw.
-  exists w. exists nil.
-  split.
-  - rewrite app_nil_r. done.
-  - done.
+  rewrite wnil in eq. symmetry in eq. rewrite app_nil_r in eq.
+  symmetry in eq. rewrite eq. done.
++ move => lw.
+  exists w. exists nil. 
+  split; try split; try symmetry;try apply app_nil_r;done.
 Qed.
 
 
 Lemma concatA L G H : langS (langS L G) H =L langS L (langS G H).
-Proof.
+Proof. 
 unfold langS.
 split.
 + move => [w1 [w2 [eq1 [[w3 [w4 [eq2 [lw3 gw4] hw2]]]]]]].
-  exists w3. exists (w4 ++ w2). 
-  split.
-  - rewrite eq1. rewrite eq2. symmetry. apply app_assoc.
-  - split.
-    * apply lw3.
-    * exists w4. exists w2. done.
+  exists w3; exists (w4 ++ w2).
+  split;try done.
+    - rewrite eq1;rewrite eq2;symmetry;apply app_assoc.
+    - split;try done;exists w4;exists w2;done.
 + move => [w1 [w2 [eq1 [lw1 [w3 [w4 [eq2 [gw3 hw4]]]]]]]].
-  exists (w1 ++ w3). exists w4.
-  split.
-  - rewrite eq1. rewrite eq2. apply app_assoc.
-  - split.
-    * exists w1. exists w3. done.
-    * apply hw4.
+  exists (w1 ++ w3);exists w4.
+  split;try done.
+    - rewrite eq1;rewrite eq2;apply app_assoc.
+    - split;try done;exists w1;exists w3;done.
 Qed.
 
 Lemma unionC L G : langU L G =L langU G L.
-Proof. 
+Proof.
 unfold langU.
-split; move => [lw | gw].
-+ right. done.
-+ left. done.
-+ right. done.
-+ left. done.
+split;move => [l1 | l2].
+right;done.
+left;done.
+right;done.
+left;done.
 Qed.
 
 Lemma interC L G : langI L G =L langI G L.
 Proof. 
-unfold langI. 
-split; move => [lw gw]; done.
-Qed.
+unfold langI.
+split; move => [l1 l2];done.
 
+Qed.
 (* useful arithmetic lemmas *)
 
     Lemma p_0 n: n + 0 = n.
@@ -481,7 +472,6 @@ split; move => L1.
 + move: L1 => [n ln].
   exists 1. simpl. apply concatL1. exists n. done.
 Qed.
-
 Lemma langKK L : langK (langK L) =L langK L.
 Proof.
 split; move => L1.
@@ -493,24 +483,6 @@ split; move => L1.
   - apply Kself. apply Kself. done.
   - apply Kself. apply Kconcat. done. done.
 Qed.
-
-(* With explicit steps
-Lemma langKK L : langK (langK L) =L langK L.
-Proof. 
-split; move => L1.
-+ induction L1. 
-  - apply Knil.
-  - apply H.
-  - apply Kconcat.
-    * apply IHL1_1.
-    * apply IHL1_2. 
-+ induction L1.
-  - apply Knil.
-  - apply Kself. apply Kself. apply H.
-  - apply Kconcat.
-    * apply IHL1_1.
-    * apply IHL1_2.
-Qed. *)
 
 
 (* Note that, since languages are represented as indicator functions    *)
@@ -565,11 +537,16 @@ rewrite la. rewrite lw. done.
 rewrite p1. rewrite eq. done. 
 exists (a::nil), w.  rewrite L1. split;try split; try done.
 Qed.
-Lemma revletter x: forall w, (w = x::nil) <-> rev w = x::nil.
+Lemma revletter x: (fun w => langA x w) =L (fun w => langA x (rev w)).
 Proof.
-split;move => wnil.
-rewrite wnil. done.
-Admitted.
+split; intros.
+rewrite H.
+done.
+have: rev (rev w) = rev (x::nil).
+rewrite H. done.
+rewrite rev_involutive.
+done.
+Qed.
 
 
 Lemma revnil: (fun w => lang1 w) =L (fun w => lang1 (rev w)).
@@ -582,11 +559,7 @@ symmetry in hl.
 apply app_cons_not_nil in hl;contradiction.
 Qed.
 
-Lemma revword x w:(fun w => langA x w) =L (fun w => langA x (rev w)).
-Proof.
-split;unfold langW;move => L1.
-- rewrite L1. simpl. done.
-- unfold langA in L1. simpl. simpl in L1. unfold langA. unfold langA. Admitted.
+
 
 Lemma revconc L G: (fun w => langS (langM G) (langM L) w) =L (fun w => langS L G (rev w)).
 Proof.
@@ -684,7 +657,7 @@ induction reg.
   - apply revnil.
 + apply REq with (fun w => langA x w).
   - apply ROne.
-  - admit.
+  - apply revletter.
 + apply RUnion;try apply IHreg1;try apply IHreg2.
 
 + apply REq with (fun w => langS (langM G) (langM L) w).
@@ -694,7 +667,7 @@ induction reg.
 + apply REq with (langK (langM L)). 
   - apply RKleene;done. 
   - apply revK.
-Admitted.
+Qed.
 
 
 
@@ -1095,9 +1068,15 @@ Qed.
 (* Q18. (HARD - OPTIONAL) show that `rmatch` is complete.               *)
 
 
-Axiom not_nil : forall x w, nil = x::w -> false.
 
-Axiom contfalse w: forall r, contains0 r = false ->  interp r nil = false. 
+
+
+Lemma contfalse w r : contains0 r = false ->  interp r nil = false.
+Proof.
+intros.
+Admitted.
+
+
 (*
 Proof. 
 elim => [|||||]//= H.
