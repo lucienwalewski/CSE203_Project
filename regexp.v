@@ -102,12 +102,29 @@ Notation language := (word -> Prop).
 
 Implicit Types (L G H : language) (x y : A) (w : word).
 
-
+(* Definition of equality for lists *)
 Definition head_l : forall x w y m, x::w = y::m -> x = y /\ w = m.
 Proof.
 move => x w y m e.
 inversion e.
 done.
+Qed.
+
+(* Some additional Lemmas *)
+
+Lemma p_0 n: n + 0 = n.
+Proof.
+done.
+Qed.
+
+Lemma add_eq_0: forall n1 n2,0 = n1 + n2 -> n1 = 0 /\ n2 = 0.
+Proof.
+elim => [|n1 h1] [|n2]//=.
+Qed.
+
+Lemma n1Sn2: forall n1 n2, n1 + S n2 = S(n1 + n2).
+Proof.
+intros. done.
 Qed.
 
 (* -------------------------------------------------------------------- *)
@@ -133,8 +150,6 @@ Definition langW w0 : language :=
 Definition langF (ws : list word) : language :=
 fun w => In w ws.
   
-
-
 (* Given a letter `x`, the language that only contains the letter `x`   *)
 (* seen as a word of length 1.                                          *)
 Definition langA x : language := 
@@ -148,12 +163,11 @@ fun w => L w \/ G w.
 Definition langI L G : language := 
 fun w => L w /\ G w.
 
-
 (* The concatenation of the two languages `L` and `G`.                  *)
 Definition langS L G : language := 
 fun w => exists w1 w2, w = w1 ++ w2 /\ L w1 /\ G w2.
 
-
+(* (Initial) definition for alternate Kleene definition *)
 Fixpoint Ln L n : language :=
 match n with
 |0 => lang1
@@ -161,21 +175,17 @@ match n with
 end.
 
 
-
-(* The Kleene closure of the language `L`   
-                            *)
+(* The Kleene closure of the language `L`                           *)
 Inductive langK L : language :=
 |Knil : langK L nil
 |Kself w : L w -> langK L w
 |Kconcat w1 w2 : langK L w1 -> langK L w2 -> langK L (w1 ++ w2).
 
 
+(* Original definition for Kleene closure *)
 Definition langK_2 L : language :=
 fun w => exists n, Ln L n w.
-(*
-Fixpoint langKn L : language:=
-fun w => w = nil \/ exists w1 w2, w1 <> nil /\ L w1 /\ langKn L w2 /\ w = w1 ++ w2.
-*)
+
 
 (* The mirror of the language `L` (You can use the `rev`, that reversed *)
 (* a list, from the standard library. *)
@@ -190,29 +200,25 @@ Definition eqL L G := forall w, L w <-> G w.
 
 Infix "=L" := eqL (at level 90).
 
-
-
-
-(* Q2. Prove the following equivalences:                                *)
-(* Helpful lemmas: *) 
-
+(* Lemmas for equality of languages *)
 
 Lemma eqL_A (L G H:language): (L =L G) /\ (G =L H) -> (L =L H).
 Proof.
 intros. move: H0 => [LG GH].
-split;intro.
-apply GH. apply LG. done.
-apply LG. apply GH. done.
+split; intro.
++ apply GH. apply LG. done.
++ apply LG. apply GH. done.
 Qed.
 
 Lemma eqL_R L G : (L =L G) -> (G =L L).
 Proof.
 intros.
 split.
-apply H.
-apply H.
++ apply H.
++ apply H.
 Qed.
-(* Back to exercise 2*)
+
+(* Exercise 2*)
 
 Lemma concat0L L : langS lang0 L =L lang0.
 Proof.
@@ -223,7 +229,7 @@ Qed.
 
 Lemma concatL0 L : langS L lang0 =L lang0.
 Proof. 
-unfold langS;unfold lang0.
+unfold langS; unfold lang0.
 split. 
 + move => [w1 [w2 [eq [l false]]]]. contradiction.
 + contradiction.
@@ -237,49 +243,50 @@ split.
 + exists nil. exists w. done.
 Qed.
 
-Lemma appwnil : forall w  l,  w = l ++ nil -> w = l.
-Proof.
-elim =>  [|a m hm] [|l] p //=.
-move =>  h.
-rewrite h.
-rewrite app_nil_r;done.
-Qed.
 
 
 Lemma concatL1 L : langS L lang1 =L L.
-Proof. 
-unfold langS;unfold lang1.
+Proof.
+unfold langS; unfold lang1.
 split.
 + move => [w1 [w2 [eq [lw1 wnil]]]].
-  rewrite wnil in eq. symmetry in eq. rewrite app_nil_r in eq.
-  symmetry in eq. rewrite eq. done.
-+ move => lw.
-  exists w. exists nil. 
-  split; try split; try symmetry;try apply app_nil_r;done.
+  rewrite wnil in eq.
+  rewrite app_nil_r in eq.
+  rewrite eq. 
+  done.
++ move => Lw.
+  exists w. exists nil.
+  split.
+  - rewrite app_nil_r. done.
+  - done.
 Qed.
 
 
 Lemma concatA L G H : langS (langS L G) H =L langS L (langS G H).
-Proof. 
+Proof.
 unfold langS.
 split.
 + move => [w1 [w2 [eq1 [[w3 [w4 [eq2 [lw3 gw4] hw2]]]]]]].
-  exists w3; exists (w4 ++ w2).
-  split;try done.
-    - rewrite eq1;rewrite eq2;symmetry;apply app_assoc.
-    - split;try done;exists w4;exists w2;done.
+  exists w3. exists (w4 ++ w2). 
+  split.
+  - rewrite eq1. rewrite eq2. symmetry. apply app_assoc.
+  - split.
+    * apply lw3.
+    * exists w4. exists w2. done.
 + move => [w1 [w2 [eq1 [lw1 [w3 [w4 [eq2 [gw3 hw4]]]]]]]].
-  exists (w1 ++ w3);exists w4.
-  split;try done.
-    - rewrite eq1;rewrite eq2;apply app_assoc.
-    - split;try done;exists w1;exists w3;done.
+  exists (w1 ++ w3). exists w4.
+  split.
+  - rewrite eq1. rewrite eq2. apply app_assoc.
+  - split.
+    * exists w1. exists w3. done.
+    * apply hw4.
 Qed.
 
 Lemma unionC L G : langU L G =L langU G L.
 Proof.
 unfold langU.
-split;move => [l1 | l2].
-right;done.
+split; move => [l1 | l2].
+right; done.
 left;done.
 right;done.
 left;done.
@@ -287,29 +294,15 @@ Qed.
 
 Lemma interC L G : langI L G =L langI G L.
 Proof. 
-unfold langI.
-split; move => [l1 l2];done.
-
+split; move => [lw lg]; done.
 Qed.
-(* useful arithmetic lemmas *)
 
-    Lemma p_0 n: n + 0 = n.
-    Proof.
-    done.
-    Qed.
-    Lemma side_n L w: (fun w => exists n : nat, Ln L n w) w -> exists n, Ln L n w.
-    Proof.
-    simpl.
-    move => [n ln]. exists n. done.
-    Qed.
-    Lemma add_eq_0: forall n1 n2,0 = n1 + n2 -> n1 = 0 /\ n2 = 0.
-    Proof.
-    elim => [|n1 h1] [|n2]//=.
-    Qed.
-    Lemma n1Sn2: forall n1 n2, n1 + S n2 = S(n1 + n2).
-    Proof.
-    intros. done.
-    Qed.
+Lemma side_n L w: (fun w => exists n : nat, Ln L n w) w -> exists n, Ln L n w.
+Proof.
+simpl.
+move => [n ln]. exists n. done.
+Qed.
+
 
 (* Useful Lemmas regarding Ln: (we write langS L1 L) as L1 ++ L2)
 
@@ -514,7 +507,7 @@ Inductive regular : language -> Prop :=
   (* The empty language is regular *)
 | REmpty : regular lang0
 | REword : regular lang1
-| ROne  x: regular (langA x)
+| ROne  : forall x, regular (langA x)
 | RUnion L G of regular L & regular G : regular (langU L G)
 | RConc L G of regular L & regular G : regular (langS L G)
 | RKleene L of regular L : regular (langK L)
