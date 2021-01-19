@@ -161,9 +161,12 @@ Inductive langK L : language :=
 |Kself w : L w -> langK L w
 |Kconcat w1 w2 : langK L w1 -> langK L w2 -> langK L (w1 ++ w2).
 
-(* Inductive langK_2 L : language :=
-|Knil : langK_2 L nil
-|Kconcat w1 w2 : w1 <> nil -> L w1 -> langK_2 L w2 -> langK_2 L (w1 ++ w2). *)
+Definition langK_2 L : language :=
+fun w => exists n, Ln L n w.
+(*
+Fixpoint langKn L : language:=
+fun w => w = nil \/ exists w1 w2, w1 <> nil /\ L w1 /\ langKn L w2 /\ w = w1 ++ w2.
+*)
 
 
 (* The mirror of the language `L` (You can use the `rev`, that reversed *)
@@ -179,6 +182,26 @@ Definition eqL L G := forall w, L w <-> G w.
 
 Infix "=L" := eqL (at level 90).
 
+(* Q2. Prove the following equivalences:                                *)
+(* Helpful lemmas: *) 
+
+
+Lemma eqL_A (L G H:language): (L =L G) /\ (G =L H) -> (L =L H).
+Proof.
+intros. move: H0 => [LG GH].
+split;intro.
+apply GH. apply LG. done.
+apply LG. apply GH. done.
+Qed.
+
+Lemma eqL_R L G : (L =L G) -> (G =L L).
+Proof.
+intros.
+split.
+apply H.
+apply H.
+Qed.
+
 (* Q2. Prove the following equivalances:                                *)
 
 Lemma concat0L L : langS lang0 L =L lang0.
@@ -188,7 +211,6 @@ split.
   contradiction.
 + contradiction.
 Qed.
-
 
 Lemma concatL0 L : langS L lang0 =L lang0.
 Proof.
