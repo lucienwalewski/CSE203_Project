@@ -653,8 +653,8 @@ induction H0. apply Knil. apply Kself. right. done.
 apply Kconcat. apply IHlangK1. apply IHlangK2.
 Qed.
 
-
-Lemma or_star_eq a b : (RE_Kleene (RE_Disjunct a b)) ~ (RE_Kleene (RE_Concat (RE_Kleene a) (RE_Kleene b))).
+Lemma langKUnionLett : forall a b, eqR (RE_Kleene (RE_Disjunct a b))
+ (RE_Kleene (RE_Concat (RE_Kleene a) (RE_Kleene b))).
 Proof.
 split; simpl; move => L1.
 + induction L1.
@@ -672,7 +672,6 @@ split; simpl; move => L1.
     apply langKUnion with a b w1 w2 in inta. move: inta => [A B]. apply B. done.
   - apply Kconcat. done. done.
 Qed.
-
 
 
 (* ==================================================================== *)
