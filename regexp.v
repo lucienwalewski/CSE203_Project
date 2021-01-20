@@ -545,7 +545,7 @@ Inductive regexp : Type :=
 
 Implicit Types (r : regexp).
 
-(* We now have to formally related regular expressions to regular       *)
+(* We now have to formally relate regular expressions to regular       *)
 (* languages. For that purpose, we are going to interpret a regular     *)
 (* expression as a languages. If r is a regular expression, then we     *)
 (* denote by language [r] as follows:                                   *)
@@ -574,42 +574,45 @@ Fixpoint interp (r : regexp) {struct r} : language :=
 
 Lemma regular_regexp r : regular (interp r).
 Proof. 
-induction r;simpl;try done.
-apply REmpty.
-apply REword.
-apply ROne.
-apply RUnion; done.
-apply RConc;done.
-apply RKleene;done.
+induction r; simpl.
++ apply REmpty.
++ apply REword.
++ apply ROne.
++ apply RUnion; done.
++ apply RConc; done.
++ apply RKleene; done.
 Qed.
 
 (* Q9. show that any regular language can be interpreted as a           *)
 (*     regular expression:                                              *)
 
-
-
-
 Lemma regexp_regular L : regular L -> exists r, L =L interp r.
 Proof. 
 move => reg.
+(* Induction over the regular language *)
 induction reg.
-
+(* Case:  *)
 + move: IHreg => [r H1]. 
   exists r. split; move => P.
   - apply H1. apply H. done.
   - apply H. apply H1. done.
+(* Case: RE_Empty *)
 + exists RE_Empty. simpl. done.
+(* Case: RE_Void *)
 + exists RE_Void. simpl. done.
+(* Case: RE_Atom *)
 + exists (RE_Atom x). simpl. done.
+(* Case: RE_Disjunct *)
 + move: IHreg1 => [r1 Lr]. move: IHreg2 => [r2 Gr].
   exists (RE_Disjunct r1 r2). simpl. unfold langU.
   split; rewrite Lr; rewrite Gr; done.
+(* Case: RE_Concat *)
 + move: IHreg1 => [r1 Lr]. move: IHreg2 => [r2 Gr].
   exists (RE_Concat r1 r2). simpl. 
   unfold langS. split; move => [w1 [w2 [eq [lw int]]]];exists w1; exists w2;
   split;try split;try done. apply Lr. done. apply Gr. done.
   apply Lr. done. apply Gr. done.
-
+(* Case: RE_Kleene *)
 + move: IHreg => [r IH].
   exists (RE_Kleene r). simpl.
   split; elim; intros.
@@ -628,6 +631,7 @@ Qed.
 (* Q10. write a binary predicate eqR : regexp -> regexp -> Prop s.t.    *)
 (*      eqR r1 r2 iff r1 and r2 are equivalent regexp.                  *)
 
+(* They are equivalent if they are equivalent languages when interpreted *)
 Definition eqR (r1 r2 : regexp) : Prop := eqL (interp r1) (interp r2).
 
 Infix "~" := eqR (at level 90).
@@ -637,6 +641,7 @@ Infix "~" := eqR (at level 90).
 Not sure if a,b are regular expressions or letters, So we treated them as
 expressions and it can easily be generalized with (RE_Atom a) and (RE_Atom b)
 for example *)
+
 Lemma langKUnion : forall a b w1 w2, (langK (interp a) w1) -> (langK (interp b) w2) -> 
     (langK (langU (interp a) (interp b)) w1) /\ (langK (langU (interp a) (interp b)) w2).
 Proof.
