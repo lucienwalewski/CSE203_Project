@@ -774,6 +774,7 @@ Fixpoint Brzozowski (x : A) (r : regexp) : regexp :=
             |RE_Kleene r => RE_Concat (Brzozowski x r) (RE_Kleene r)
             |_ => RE_Empty
 end.
+
 (* Q15. write a function `rmatch` s.t. `rmatch r w` checks whether a     *)
 (*      word `w` matches a given regular expression `r`.                *)
 
