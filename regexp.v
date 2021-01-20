@@ -168,13 +168,11 @@ match n with
 |S n => langS L (Ln L n)
 end.
 
-
 (* The Kleene closure of the language `L`                           *)
 Inductive langK L : language :=
 |Knil : langK L nil
 |Kself w : L w -> langK L w
 |Kconcat w1 w2 : langK L w1 -> langK L w2 -> langK L (w1 ++ w2).
-
 
 (* Original definition for Kleene closure *)
 Definition langK_2 L : language :=
@@ -280,10 +278,10 @@ Lemma unionC L G : langU L G =L langU G L.
 Proof.
 unfold langU.
 split; move => [l1 | l2].
-right; done.
-left; done.
-right; done.
-left; done.
++ right; done.
++ left; done.
++ right; done.
++ left; done.
 Qed.
 
 Lemma interC L G : langI L G =L langI G L.
@@ -352,41 +350,54 @@ Inductive regular : language -> Prop :=
 Lemma regularW w : regular (langW w).
 Proof. 
 induction w.
-apply REword.
-apply REq with (langS (langA a) (langW w)).
-apply RConc.
-apply ROne.
-apply IHw.
-split; move => L1.
-move: L1 => [w1 [w2 [eq [la lw]]]].
-have p1: (a::w) = w1 ++ w2.
-rewrite la. rewrite lw. done.
-rewrite p1. rewrite eq. done. 
-exists (a::nil), w.  rewrite L1. split;try split; try done.
++ apply REword.
+(* Apply REq *)
++ apply REq with (langS (langA a) (langW w)). 
+(* Show that it's regular *)
+  - apply RConc.
+    * apply ROne.
+    * apply IHw.
+(* Show they are equal by double implication *)
+  - split; move => L1.
+    * move: L1 => [w1 [w2 [eq [la lw]]]].
+      have p1: (a::w) = w1 ++ w2.
+      ++  rewrite la.
+          rewrite lw.
+          done.
+      ++  rewrite p1.
+          done.
+    * exists (a::nil), w.
+      rewrite L1.
+      split; try split; try done.
 Qed.
+    
+
+(* -------------------------------------------------------------------- *)
+(* Q5. prove that `langM L` is regular, given that L is regular.        *)
+
+(* First we prove some helpful lemmas *)
+
 Lemma revletter x: (fun w => langA x w) =L (fun w => langA x (rev w)).
 Proof.
 split; intros.
-rewrite H.
-done.
-have: rev (rev w) = rev (x::nil).
-rewrite H. done.
-rewrite rev_involutive.
-done.
++ rewrite H.
+  done.
++ have: rev (rev w) = rev (x::nil).
+  - rewrite H. done.
+  - rewrite rev_involutive.
+    done.
 Qed.
-
 
 Lemma revnil: (fun w => lang1 w) =L (fun w => lang1 (rev w)).
 Proof.
-split; induction w;try done.
+split; induction w; try done.
 unfold lang1.
 simpl.
 move => hl.
 symmetry in hl.
-apply app_cons_not_nil in hl;contradiction.
+apply app_cons_not_nil in hl.
+contradiction.
 Qed.
-
-
 
 Lemma revconc L G: (fun w => langS (langM G) (langM L) w) =L (fun w => langS L G (rev w)).
 Proof.
@@ -394,13 +405,14 @@ unfold langS. unfold langM.
 split; move => L1.
 + move: L1 => [w1 [w2 [r [l1 l2]]]].
   exists (rev w2). exists (rev w1). 
-  split;try split;try done.
+  split; try split; try done.
   - rewrite r. apply rev_app_distr.
 + move: L1 => [w1 [w2 [r [l1 l2]]]].
   exists (rev w2). exists (rev w1).
-  split;try split;try rewrite rev_involutive; try done.
-  -  apply rev_eq_app. done.
+  split; try split; try rewrite rev_involutive; try done.
+  - apply rev_eq_app. done.
 Qed.
+
 (*
 Lemma ln_opp L n : Ln L (S n) =L langS (Ln L n) L.
 Proof.
@@ -420,11 +432,14 @@ induction n.
     
 Admitted.
 *)
+
 Lemma nilrev w : rev w = nil -> w = nil.
 intros.
 induction w.
-done. 
-simpl in H. apply app_eq_nil in H. destruct H. discriminate.
++ done. 
++ simpl in H. 
+  apply app_eq_nil in H.
+  destruct H. discriminate.
 Qed.
 
 Lemma revK L: langK (langM L) =L (fun w => langK L (rev w)).
@@ -436,51 +451,48 @@ split; move => L1.
   - rewrite rev_app_distr. apply Kconcat. done. done. 
 + remember (rev w) as rw.
   move: w Heqrw. 
-  induction L1. move => wn Heqrw. 
-  - symmetry in Heqrw. apply nilrev in Heqrw. rewrite Heqrw. apply Knil.
+  induction L1. 
+  - move => wn Heqrw. symmetry in Heqrw. apply nilrev in Heqrw. rewrite Heqrw. apply Knil.
   - move => wn Heqrw. apply Kself. rewrite Heqrw in H. done.
   - move => w Heqrw.  symmetry in Heqrw. apply rev_eq_app in Heqrw. rewrite Heqrw.
     apply Kconcat. apply IHL1_2. rewrite rev_involutive. done.
                     apply IHL1_1. rewrite rev_involutive. done.
 Qed.
 
-(* -------------------------------------------------------------------- *)
-(* Q5. prove that `langM L` is regular, given that L is regular.        *)
+(* We now prove the main part of question 5 *)
+
 Lemma regularM L : regular L -> regular (langM L).
 Proof. 
 move => reg.
 unfold langM.
 induction reg.
+(* Case: REq *)
 + apply REq with (langM L).
+  (* Regular *)
   - apply IHreg.
-  - unfold langM;split;apply H.
+  (* Equality *)
+  - unfold langM; split; apply H.
+(* Case : REmpty *)
 + apply REmpty.
+(* Case: REword *)
 + apply REq with (fun w => lang1 w).
   - apply regularW.
   - apply revnil.
+(* Case: ROne *)
 + apply REq with (fun w => langA x w).
   - apply ROne.
   - apply revletter.
-+ apply RUnion;try apply IHreg1;try apply IHreg2.
-
+(* Case: RUnion *)
++ apply RUnion; try apply IHreg1; try apply IHreg2.
+(* Case: RConc *)
 + apply REq with (fun w => langS (langM G) (langM L) w).
   - apply RConc. done. done.
   - apply revconc.
-
+(* Case: RKleene *)
 + apply REq with (langK (langM L)). 
   - apply RKleene;done. 
   - apply revK.
 Qed.
-
-
-
-
-
-
-
-
-
-
 
 
 (* ==================================================================== *)
