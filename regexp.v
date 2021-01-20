@@ -591,7 +591,7 @@ Proof.
 move => reg.
 (* Induction over the regular language *)
 induction reg.
-(* Case:  *)
+(* Case: Equivalent language *)
 + move: IHreg => [r H1]. 
   exists r. split; move => P.
   - apply H1. apply H. done.
