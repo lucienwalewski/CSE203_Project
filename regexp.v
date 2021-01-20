@@ -290,7 +290,6 @@ split; move => [lw lg]; done.
 Qed.
 
 
-
 Lemma langKK L : langK (langK L) =L langK L.
 Proof. 
 split; move => L1. 
@@ -311,7 +310,7 @@ Qed.
 
 (* Note that, since languages are represented as indicator functions    *)
 (* over `Prop`, we cannot assess that `L =L G` implies `L = G`.         *)
-Check (nil).
+
 (* ==================================================================== *)
 (*                          REGULAR LANGUAGES                           *)
 
@@ -337,7 +336,7 @@ Inductive regular : language -> Prop :=
 
   (* The empty language is regular *)
 | REmpty : regular lang0
-| REword : regular lang1
+| REvoid : regular lang1
 | ROne x : regular (langA x)
 | RUnion L G of regular L & regular G : regular (langU L G)
 | RConc L G of regular L & regular G : regular (langS L G)
@@ -350,7 +349,7 @@ Inductive regular : language -> Prop :=
 Lemma regularW w : regular (langW w).
 Proof. 
 induction w.
-+ apply REword.
++ apply REvoid.
 (* Apply REq *)
 + apply REq with (langS (langA a) (langW w)). 
 (* Show that it's regular *)
@@ -474,7 +473,7 @@ induction reg.
   - unfold langM; split; apply H.
 (* Case : REmpty *)
 + apply REmpty.
-(* Case: REword *)
+(* Case: REvoid *)
 + apply REq with (fun w => lang1 w).
   - apply regularW.
   - apply revnil.
@@ -576,7 +575,7 @@ Lemma regular_regexp r : regular (interp r).
 Proof. 
 induction r; simpl.
 + apply REmpty.
-+ apply REword.
++ apply REvoid.
 + apply ROne.
 + apply RUnion; done.
 + apply RConc; done.
@@ -591,7 +590,7 @@ Proof.
 move => reg.
 (* Induction over the regular language *)
 induction reg.
-(* Case: Equivalent language *)
+(* Case: REq *)
 + move: IHreg => [r H1]. 
   exists r. split; move => P.
   - apply H1. apply H. done.
@@ -660,8 +659,10 @@ split; simpl; move => L1.
 + induction L1.
   - apply Knil.
   - apply Kself. destruct H.
+  (* Hypothesis: interp a w *)
     * exists w, nil. split; try split. symmetry. apply app_nil_r.
       apply Kself. done. apply Knil.
+  (* Hypothesis: interp b w *)
     * exists nil, w. split; try split. apply Knil. apply Kself. done.
   - apply Kconcat. done. done.
 + induction L1.
@@ -696,13 +697,16 @@ Qed.
 (*   - if w = x · w' for some letter x and word w', we recursively      *)
 (*     check that `w` matches `x⁻¹·r`; otherwise                        *)
 (*   - if w = ε, then we directly check that [r] contains the empty     *)
-(*     word - a property that is deciable.                              *)
+(*     word - a property that is decidable.                              *)
+
 
 (* Q12. write a nullity test `contains0` : regexp -> bool s.t.          *)
 (*                                                                      *)
-(*      ∀ r, contains0 r ⇔ ε ∈ [e]                                      *)
+(*      ∀ r, contains0 r ⇔ ε ∈ [r]                                      *)
 
 Fixpoint contains0 (r : regexp) : bool := 
+(* Only base case that contains the empty word is lang1 *)
+(* Kleene always contains the empty word *)
             match r with
             |RE_Empty => false
             |RE_Void => true
@@ -718,21 +722,19 @@ Fixpoint contains0 (r : regexp) : bool :=
 Lemma contains0_ok r : contains0 r <-> interp r nil.
 Proof. 
 (*unfold contains0.*)
-split; move => prop;simpl;induction r;try done;simpl;simpl in prop.
-+ unfold langU;case p1: (contains0 r1);rewrite p1 in IHr1;rewrite p1 in prop.
-  - left;apply IHr1;try done.
-  - right;case p2: (contains0 r2);rewrite p2 in prop;rewrite p2 in IHr2;auto.
-+ unfold langS;exists nil;exists nil;simpl;split;try done.
+split; move => prop; induction r; try done; simpl; simpl in prop.
++ unfold langU; case p1: (contains0 r1);rewrite p1 in IHr1;rewrite p1 in prop.
+  - left; apply IHr1; try done.
+  - right; case p2: (contains0 r2); rewrite p2 in prop; rewrite p2 in IHr2; auto.
++ unfold langS; exists nil; exists nil; simpl; split; try done.
 case p1: (contains0 r1);rewrite p1 in IHr1;rewrite p1 in prop;
-case p2: (contains0 r2);rewrite p2 in prop;rewrite p2 in IHr2;intuition.
+case p2: (contains0 r2);rewrite p2 in prop;rewrite p2 in IHr2; intuition.
 + apply Knil.
-+ unfold langU in prop;move: prop => [left | right];intuition.
++ unfold langU in prop; move: prop => [left | right]; intuition.
 + move: prop => [w1 [w2 [nil [int1 int2]]]].
-symmetry in nil;apply app_eq_nil in nil;move: nil => [nil1 nil2].
-rewrite nil1 in int1;rewrite nil2 in int2.
-rewrite IHr1;try done;rewrite IHr2;done.
-
-
+symmetry in nil; apply app_eq_nil in nil; move: nil => [nil1 nil2].
+rewrite nil1 in int1; rewrite nil2 in int2.
+rewrite IHr1; try done; rewrite IHr2; done.
 Qed.
 
 
@@ -763,9 +765,6 @@ Axiom Aeq_dec2 : forall (x y : A), Aeq x y = false <-> x <> y.
 Axiom contfalse : forall r, contains0 r = false ->  interp r nil = False.
 
 
-
-
-
 Fixpoint Brzozowski (x : A) (r : regexp) : regexp := 
             match r with
             |RE_Atom y => if (Aeq x y) then RE_Void else RE_Empty
@@ -775,7 +774,7 @@ Fixpoint Brzozowski (x : A) (r : regexp) : regexp :=
             |RE_Kleene r => RE_Concat (Brzozowski x r) (RE_Kleene r)
             |_ => RE_Empty
 end.
-(* Q15. write a function `rmatch` s.t. `rmatch r w` checks wether a     *)
+(* Q15. write a function `rmatch` s.t. `rmatch r w` checks whether a     *)
 (*      word `w` matches a given regular expression `r`.                *)
 
 Fixpoint rmatch (r : regexp) (w : word) : bool := 
@@ -803,13 +802,12 @@ induction r; simpl; try done; move => x w.
   - apply Aeq_dec in p1. move => wnil.
     rewrite wnil. rewrite p1. done.
   - contradiction.
-
-
 (*RE_Disjunct *)
 + unfold langU.
   move => [Br1 | Br2].
   - left;apply IHr1;apply Br1.
   - right;apply IHr2; apply Br2.
+
 (*RE_Concat*)
 + unfold langU. unfold langS;unfold lang1. move => [H | H].
   - move: H => [w1 [w2 [eq12 [br1 lr2]]]].
@@ -854,8 +852,8 @@ Lemma rmatch_correct (r : regexp) (w : word):
   rmatch r w -> interp r w.
 Proof. 
 move : r.
-induction w;simpl.
-+ apply contains0_ok;done.
+induction w; simpl.
++ apply contains0_ok; done.
 + move => r br. 
   apply Brzozowski_correct. apply IHw.  done.
 Qed.
