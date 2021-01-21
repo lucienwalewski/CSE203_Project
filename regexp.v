@@ -765,6 +765,9 @@ Axiom Aeq_dec2 : forall (x y : A), Aeq x y = false <-> x <> y.
 Axiom contfalse : forall r, contains0 r = false ->  interp r nil = False.
 
 
+
+
+
 Fixpoint Brzozowski (x : A) (r : regexp) : regexp := 
             match r with
             |RE_Atom y => if (Aeq x y) then RE_Void else RE_Empty
@@ -774,8 +777,7 @@ Fixpoint Brzozowski (x : A) (r : regexp) : regexp :=
             |RE_Kleene r => RE_Concat (Brzozowski x r) (RE_Kleene r)
             |_ => RE_Empty
 end.
-
-(* Q15. write a function `rmatch` s.t. `rmatch r w` checks whether a     *)
+(* Q15. write a function `rmatch` s.t. `rmatch r w` checks wether a     *)
 (*      word `w` matches a given regular expression `r`.                *)
 
 Fixpoint rmatch (r : regexp) (w : word) : bool := 
@@ -803,12 +805,13 @@ induction r; simpl; try done; move => x w.
   - apply Aeq_dec in p1. move => wnil.
     rewrite wnil. rewrite p1. done.
   - contradiction.
+
+
 (*RE_Disjunct *)
 + unfold langU.
   move => [Br1 | Br2].
   - left;apply IHr1;apply Br1.
   - right;apply IHr2; apply Br2.
-
 (*RE_Concat*)
 + unfold langU. unfold langS;unfold lang1. move => [H | H].
   - move: H => [w1 [w2 [eq12 [br1 lr2]]]].
@@ -853,8 +856,8 @@ Lemma rmatch_correct (r : regexp) (w : word):
   rmatch r w -> interp r w.
 Proof. 
 move : r.
-induction w; simpl.
-+ apply contains0_ok; done.
+induction w;simpl.
++ apply contains0_ok;done.
 + move => r br. 
   apply Brzozowski_correct. apply IHw.  done.
 Qed.
@@ -977,6 +980,19 @@ induction w; simpl; move => r rw.
 + apply contains0_ok. done.
 + apply IHw. apply correct_Brzozowski. done.
 Qed.
+
+
+
+
+
+
+(*                 SIDE QUEST                        *)
+
+
+
+
+
+
 
 (* Lemmas used for initial Kleene closure definition *)
 
